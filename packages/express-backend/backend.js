@@ -28,7 +28,12 @@ const users = {
           id: 'zap555', 
           name: 'Dennis',
           job: 'Bartender',
-       }
+       },
+       {
+        "id": "qwe123",
+        "job": "Zookeeper",
+        "name": "Cindy"
+     }
     ]
  }
 
@@ -72,3 +77,14 @@ app.get('/users/:id', (req, res) => {
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });      
+
+const addUser = (user) => {
+    users['users_list'].push(user);
+    return user;
+}
+
+app.post('/users', (req, res) => {
+    const userToAdd = req.body;
+    addUser(userToAdd);
+    res.send();
+});
