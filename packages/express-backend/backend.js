@@ -96,16 +96,26 @@ app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });      
 
+const generateUniqueId = () => {
+    const min = 100000;
+    const max = 999999;
+    return (Math.floor(Math.random() * (max - min + 1)) + min);
+}
+
 const addUser = (user) => {
+    let newId = generateUniqueId();
+    do {
+        newId = generateUniqueId();
+    } while (users['users_list'].some(obj => obj.id === newId));
+    user['id'] = newId.toString();
     users['users_list'].push(user);
     return user;
 }
 
 app.post('/users', (req, res) => {
     const userToAdd = req.body;
-    addUser(userToAdd);
-    res.statusCode = 201;
-    res.send();
+    const user = addUser(userToAdd);
+    res.status(201).send(user);
 });
 
 const delUser = (id) => {
@@ -113,25 +123,10 @@ const delUser = (id) => {
 }
 
 app.delete('/users/:id', (req, res) => {
-    const idToDel = req.params['id'];
-    delUser(idToDel);
-    res.send()
-});
-
-const findUserByNameAndJob = (name, job) => { 
-    return users['users_list']
-        .filter( (user) => (user['name'] === name && user['job'] === job)); 
-}
-
-app.get('/users', (req, res) => {
-    const name = req.query.name;
-    const job = req.query.job;
-    if (name != undefined && job != undefined){
-        let result = findUserByNameAndJob(name, job);
-        result = {users_list: result};
-        res.send(result);
+    const idToDel = req.body['id'];
+    if(users['users_list'].some(obj => obj.id === idToDel)){
+        delUser(idToDel);
+        res.status(204).send();
     }
-    else{
-        res.send(users);
-    }
+    res.status(404);
 });
