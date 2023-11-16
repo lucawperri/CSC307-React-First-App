@@ -1,40 +1,13 @@
-import React, {useState, useEffect} from 'react';
-import Table from './Table';
-import Form from './Form';
+import React, {useState, useEffect} from "react";
+import Table from "./Table";
+import Form from "./Form"
 
 function MyApp() {
-  const [characters, setCharacters] = useState([]);
+  var [characters, setCharacters] = useState([]);
+  var [filteredCharacters, setFilteredCharacters] = useState([]);
 
-  async function removeOneCharacter (index) {
-    const promise = await fetch("Http://localhost:8000/users/:id", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(characters[index]),
-    });
-    if(promise.status === 204){
-      const updated = characters.filter((character, i) => {
-	      return i !== index
-	  });	  setCharacters(updated);
-      return promise;
-    }
-}
-
-function updateList(person) { 
-  postUser(person)
-    .then(() => {
-      // Fetch the updated user list from the server
-      fetchUsers()
-        .then((res) => res.json())
-        .then((json) => setCharacters(json["users_list"]))
-        .catch((error) => {
-          console.log(error);
-        });
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   function fetchUsers() {
@@ -42,33 +15,89 @@ function updateList(person) {
     return promise;
   }
 
-  async function postUser(person) {
-    const promise = await fetch("Http://localhost:8000/users", {
+  function postUser(person) {
+    const promise = fetch("http://localhost:8000/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(person),
+      body: JSON.stringify(person)
     });
-    if(promise.status === 201){
-      return promise;
-    }
+
+    return promise
   }
 
+  function deleteUser(id) {
+    const promise = fetch(`http://localhost:8000/users/${id}`, {
+      method: "DELETE"
+    });
+
+    return promise;
+  }
+
+  function removeCharacter(id) {
+    deleteUser(id)
+      .then((res) => {
+        if (res.status === 204)
+        console.log("inside");
+        setCharacters(characters.filter((character, i) => character._id !== id));
+        characters = characters.filter((character, i) => character._id !== id);
+      })
+      .catch((error) => console.log(error));
+      sleep(500).then(() => { filterCharacters(); });
+  }
+
+  function addCharacter(person) {
+    postUser(person)
+      .then((res) => res.status === 201 ? res.json() : undefined)
+      .then((json) => { if (json) setCharacters([...characters, json]); characters = [...characters, json];
+       })
+      .catch((error) => console.log(error));
+      sleep(500).then(() => { filterCharacters(); });
+  }
+
+  function filterCharacters(){
+    var value = document.getElementById("filter").value;
+    console.log(value);
+    if(value !== "All"){
+      setFilteredCharacters(characters.filter((character) => character.tag === value));
+      filteredCharacters = characters.filter((character) => character.tag === value);
+      console.log(filteredCharacters);
+    }
+    else{
+      setFilteredCharacters(characters);
+      filteredCharacters = characters;
+      console.log(filteredCharacters);
+    }
+  }
+  
   useEffect(() => {
+    console.log('hi')
     fetchUsers()
       .then((res) => res.json())
       .then((json) => setCharacters(json["users_list"]))
-      .catch((error) => { console.log(error); });
+      .catch((error) => { console.log(error); })
+    fetchUsers()
+      .then((res) => res.json())
+      .then((json) => setFilteredCharacters(json["users_list"]))
+      .catch((error) => { console.log(error); })
   }, [] );
-    
+  
   return (
     <div className="container">
-      <Table characterData={characters} 
-        removeCharacter={removeOneCharacter} />
-      <Form handleSubmit={updateList}/>
+      <label htmlFor="filter">Filter</label>
+      <select name="filter" id="filter" onChange={filterCharacters}>
+        <option value="All">All Items</option>
+        <option value="School">School</option>
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+      </select>
+      <div id="table">
+        <Table characterData={filteredCharacters} removeCharacter={removeCharacter} title="People"/>
+      </div>
+      <Form handleSubmit={addCharacter}/>
     </div>
-  )  
+  );
 }
 
 export default MyApp;
